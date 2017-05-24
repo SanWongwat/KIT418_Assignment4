@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 
 public class StreamEngine {
@@ -15,9 +16,11 @@ public class StreamEngine {
 		// TODO Auto-generated method stub
 		//1 read a file line by line 
 		// output them to a socket.
-		PrintWriter out=null;
+		    
 		    try{
-			FileReader fr=new FileReader("C:\\Users\\caihu\\OneDrive\\Documents\\KIT418_Assignment4\\src\\StreamGenerator\\string.txt");
+		    PrintWriter out=null;
+		    URL path=StreamEngine.class.getResource("string.txt");	
+			FileReader fr=new FileReader(path.getFile());
 			char[] cbuf=new char[32];
 			int hasRead=0;
 			Socket socket=new Socket(Server_HOSTNAME,SERVER_PORT);
