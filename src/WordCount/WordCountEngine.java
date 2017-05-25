@@ -2,9 +2,12 @@ package WordCount;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WordCountEngine {
 
+	public static List<Word> wordList = new ArrayList<Word>();
 	private static int PORT_NUMBER = 1254;
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -17,7 +20,6 @@ public class WordCountEngine {
 				Socket sk = ss.accept();
 				System.out.println("Connected to ...");
 				new WordCounterThread(sk).start();
-				
 			}
 		}
 		catch(Exception ex){

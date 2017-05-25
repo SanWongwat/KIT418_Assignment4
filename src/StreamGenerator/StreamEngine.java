@@ -20,16 +20,17 @@ public class StreamEngine {
 		// output them to a socket.
 
 		try {
-			URL path = StreamEngine.class.getResource("string.txt");
+			URL path = StreamEngine.class.getResource("intimeof.txt");
 			FileReader fr = new FileReader(path.getFile());
 			char[] cbuf = new char[32];
 			int hasRead = 0;
 			Socket socket = new Socket(Server_HOSTNAME, SERVER_PORT);
 			DataOutputStream _dos = new DataOutputStream(socket.getOutputStream());
+			System.out.println("Streaming content...");
 			while ((hasRead = fr.read(cbuf)) > 0) {
 				_dos.writeUTF(new String(cbuf, 0, hasRead));
-				System.out.println(new String(cbuf, 0, hasRead));
-				Thread.sleep(1000);
+				//System.out.println(new String(cbuf, 0, hasRead));
+				Thread.sleep(2000);
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
