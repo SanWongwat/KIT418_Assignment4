@@ -1,15 +1,16 @@
 package SharedObject;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class WordCountInstance {
+public class WordCountInstance implements Serializable {
 	private String Address;
 	private int Port;
 	private String WorkerName;
 	private String Passcode;
 	private Date StartTime;
 	private Date StopTime;
-	private Process Process;
+	private transient Process Process;
 
 	public WordCountInstance(String pPasscode) {
 		// TODO Auto-generated constructor stub

@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -43,9 +44,6 @@ public class ServiceProvider extends Thread {
 			case CheckStatus:
 				GetStatus();
 				break;
-			case Sync:
-				UpdateMaster();
-				break;
 			default:
 				break;
 			}
@@ -64,10 +62,6 @@ public class ServiceProvider extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void UpdateMaster() {
-		
 	}
 
 	public void StartService(String passcode) throws IOException {
@@ -94,29 +88,25 @@ public class ServiceProvider extends Thread {
 		wc.setPort(portNo);
 		wc.StartService();
 		ProcessBuilder pb = new ProcessBuilder(command);
+		pb.redirectOutput(new File("D:\\output.txt"));
 		Process p = pb.start();
 		wc.setProcess(p);
 		Worker.processes.add(wc);
 		_dos.writeUTF(String.valueOf(portNo));
 		Utils.Log(TAG, "New wordcount instance started at port :" + portNo);
-		Utils.Log(TAG, ""+Worker.processes.size());
+		Utils.Log(TAG, "" + Worker.processes.size());
 	}
 
 	public void StopService(String passcode) throws IOException {
 		Utils.Log(TAG, "Stopping service: " + passcode);
 		boolean isOk = false;
 		WordCountInstance wc = null;
-		Utils.Log(TAG, "" + Worker.processes.size());
 		for (WordCountInstance w : Worker.processes) {
-			Utils.Log(TAG, "finding process");
 			if (w.getPasscode().equals(passcode)) {
-				Utils.Log(TAG, "found process");
 				Process p = w.getProcess();
 				if (p.isAlive()) {
-					Utils.Log(TAG, "destroy process");
 					p.destroy();
 					if (p.isAlive()) {
-						Utils.Log(TAG, "kill process");
 						p.destroyForcibly();
 					}
 				}

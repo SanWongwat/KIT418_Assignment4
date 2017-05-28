@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import SharedObject.ServiceEnum;
 import SharedObject.Utils;
@@ -81,8 +82,12 @@ public class RequestHandler extends Thread {
 					return;
 					// Intentional fallthrough
 				}
+				case Sync: {
+					this.UpdateInstance();
+					return;
 				}
-				//end while
+				}
+				// end while
 			}
 
 		} catch (SocketException e) {
@@ -91,6 +96,18 @@ public class RequestHandler extends Thread {
 			e.printStackTrace();
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void UpdateInstance() throws IOException, ClassNotFoundException {
+		ObjectInputStream in = new ObjectInputStream(_cSocket.getInputStream());
+		List<WordCountInstance> updatelist = (List<WordCountInstance>) in.readObject();
+		for (WordCountInstance wWorker : updatelist) {
+			for (WordCountInstance wMaster : Master.listWCInstance) {
+				if (wMaster.getPasscode().equals(wWorker.getPasscode())) {
+					wMaster.setPort(wWorker.getPort());
+				}
+			}
 		}
 	}
 
@@ -184,6 +201,8 @@ public class RequestHandler extends Thread {
 			_cDos.writeUTF(ServiceEnum.OK.toString());
 			Utils.Log(TAG, target.getAddress() + " : " + target.getPort());
 			Socket sk = new Socket(target.getAddress(), target.getPort());
+			DataOutputStream dos = new DataOutputStream(sk.getOutputStream());
+			dos.writeUTF(ServiceEnum.GetResult.toString());
 			ObjectInputStream in = new ObjectInputStream(sk.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(_cSocket.getOutputStream());
 			HashMap<String, Integer> data = (HashMap<String, Integer>) in.readObject();

@@ -16,23 +16,31 @@ public class Worker implements Runnable {
 	public static String WORDCOUNTJAR = "mockwordcount.jar";
 	public static int INIT_PORT = 1300;
 	public static String WORDCOUNTPATH;
+	public static String MASTER_IP = "localhost";
+	public static int MASTER_PORT = 1250;
 	public static final String TAG = "Worker";
 	public static String Name;
 	public static List<WordCountInstance> processes = new ArrayList<WordCountInstance>();
 
 	public static void main(String[] args) throws IOException {
 
-		if (args.length == 4) {
-			WORKER_IP = args[0];
-			WORKER_PORT = Integer.parseInt(args[1]);
-			WORDCOUNTJAR = args[2];
-			INIT_PORT = Integer.parseInt(args[3]);
+		if (args.length == 6) {
+			MASTER_IP = args[0];
+			MASTER_PORT = Integer.parseInt(args[1]);
+			WORKER_IP = args[2];
+			WORKER_PORT = Integer.parseInt(args[3]);
+			WORDCOUNTJAR = args[4];
+			INIT_PORT = Integer.parseInt(args[5]);
+		} else {
+			Utils.Log(TAG, "Invalid arguments");
+			return;
 		}
 		WORDCOUNTPATH = System.getProperty("user.dir") + WORDCOUNTJAR;
-		Name=String.format("%s:%s", WORKER_IP,WORKER_PORT);
+		Name = String.format("%s:%s", WORKER_IP, WORKER_PORT);
 		Worker worker = new Worker();
 		Thread t = new Thread(worker);
 		t.start();
+		new CheckProcess(MASTER_IP, MASTER_PORT).start();
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			try {
@@ -43,14 +51,24 @@ public class Worker implements Runnable {
 						System.out.println(String.format("Address: %s:%d", w.getAddress(), w.getPort()));
 					}
 				}
-				if(command[0].equals("c")){
-					for (WordCountInstance w: processes){
-						if(w.getPort() == Integer.parseInt(command[1])){
-							if(w.getProcess().isAlive()){
+				if (command[0].equals("c")) {
+					for (WordCountInstance w : processes) {
+						if (w.getPort() == Integer.parseInt(command[1])) {
+							if (w.getProcess().isAlive()) {
 								System.out.println("Process is alive.");
-							}
-							else{
+							} else {
 								System.out.println("Process is dead.");
+							}
+						}
+					}
+				}
+				if (command[0].equals("k")) {
+					for (WordCountInstance w : processes) {
+						if (w.getPasscode().equals(command[1]) ) {
+							w.getProcess().destroy();
+							Utils.Log(TAG, "Kill process: " + command[1]);
+							if (w.getProcess().isAlive()) {
+								w.getProcess().destroyForcibly();
 							}
 						}
 					}
@@ -65,7 +83,7 @@ public class Worker implements Runnable {
 	public void run() {
 		ServerSocket ss = null;
 		while (true) {
-			if (isPortAvialble(WORKER_PORT))
+			if (Utils.isPortAvailble(WORKER_PORT))
 				break;
 			else
 				WORKER_PORT++;
@@ -88,17 +106,6 @@ public class Worker implements Runnable {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-		}
-	}
-
-	public boolean isPortAvialble(int port) {
-		ServerSocket s = null;
-		try {
-			s = new ServerSocket(port);
-			s.close();
-			return true;
-		} catch (IOException ex) {
-			return false;
 		}
 	}
 

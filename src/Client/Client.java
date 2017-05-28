@@ -10,11 +10,13 @@ import java.net.Socket;
 import java.util.HashMap;
 
 import SharedObject.ServiceEnum;
+import SharedObject.Utils;
 
 public class Client {
 
-	private static String MASTER_IP= "localhost";
-	private static int MASTER_PORT= 1255;
+	private static final String TAG = "Client";
+	private static String MASTER_IP = "localhost";
+	private static int MASTER_PORT = 1255;
 	private static Socket _sk;
 	private static DataInputStream _dis;
 	private static DataOutputStream _dos;
@@ -24,6 +26,9 @@ public class Client {
 		if (args.length == 2) {
 			MASTER_IP = args[0];
 			MASTER_PORT = Integer.parseInt(args[1]);
+		} else {
+			Utils.Log(TAG, "Invalid arguments");
+			return;
 		}
 		try {
 			// connect to master;
@@ -63,7 +68,7 @@ public class Client {
 	}
 
 	private static void StopService() throws IOException, ClassNotFoundException {
-//		GetResult();
+		// GetResult();
 		if (validatePasscode(ServiceEnum.StopService)) {
 			String summary = _dis.readUTF();
 			System.out.println(summary);

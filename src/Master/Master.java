@@ -30,7 +30,7 @@ public class Master implements Runnable {
 				WorkerInfo w = new WorkerInfo();
 				w.setAddress(workerArr[0]);
 				w.setPort(Integer.parseInt(workerArr[1]));
-				w.setName(String.format("%s:%s", w.getAddress(),w.getPort()));
+				w.setName(String.format("%s:%s", w.getAddress(), w.getPort()));
 				listWorker.add(w);
 			}
 
@@ -42,6 +42,9 @@ public class Master implements Runnable {
 		if (args.length == 2) {
 			MASTER_PORT = Integer.parseInt(args[0]);
 			MAX_PROCESS = Integer.parseInt(args[1]);
+		} else {
+			Utils.Log(TAG, "Invalid arguments");
+			return;
 		}
 		Master master = new Master();
 		Thread t = new Thread(master);
@@ -71,8 +74,8 @@ public class Master implements Runnable {
 	public void run() {
 		ServerSocket ss = null;
 		try {
-			Utils.Log(TAG, "Start Master.");
 			ss = new ServerSocket(MASTER_PORT);
+			Utils.Log(TAG, "Start Master");
 			while (true) {
 				Socket sk = ss.accept();
 				new RequestHandler(sk).start();

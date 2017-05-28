@@ -1,5 +1,6 @@
 package WordCount;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -23,8 +24,13 @@ public class MockWordCount {
 			System.out.println("Wordcount start at:" + ss.getLocalPort());
 			while (true) {
 				Socket sk = ss.accept();
-				ObjectOutputStream out = new ObjectOutputStream(sk.getOutputStream());
-				out.writeObject(testData);
+				DataInputStream dis = new DataInputStream(sk.getInputStream());
+				String requestType = dis.readUTF();
+				System.out.println(requestType);
+				if (requestType.equals("GetResult")) {
+					ObjectOutputStream out = new ObjectOutputStream(sk.getOutputStream());
+					out.writeObject(testData);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
