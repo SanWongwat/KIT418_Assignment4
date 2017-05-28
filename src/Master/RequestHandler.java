@@ -2,10 +2,13 @@ package Master;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -26,12 +29,8 @@ public class RequestHandler extends Thread {
 	private DataOutputStream _cDos;
 	private final String optionStr = "Please specify service.\r\n1. Start service\r\n" + "2. Get current word count\r\n"
 			+ "3. Stop service\r\n" + "4. Exit";
-	private String WORKER_IP;
-	private int WORKER_PORT;
-	private final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	private SecureRandom rnd = new SecureRandom();
-	private int PASSCODE_LENGTH = 12;
 	private double PRICE_PER_SECOND = 0.005;
+	private SecureRandom random = new SecureRandom();
 
 	public RequestHandler(Socket sk) {
 		super();
@@ -48,54 +47,148 @@ public class RequestHandler extends Thread {
 			_cDis = new DataInputStream(_cSocket.getInputStream());
 			_cDos.writeUTF(optionStr);
 
-			ServiceEnum sType;
+			ServiceEnum sType = null;
 			String[] requestArr;
 			while (true) {
 				requestArr = _cDis.readUTF().split(",");
-
 				if (Utils.IsEnum(requestArr[0])) {
 					sType = ServiceEnum.valueOf(requestArr[0]);
-					break;
 				} else {
 					_cDos.writeUTF(String.format("%s,%s", ServiceEnum.Error.toString(), "Wrong Option."));
+					continue;
 				}
-			}
-			switch (sType) {
-			case StartService: {
-				// Start service
-				Utils.Log(TAG, "Start service");
-				this.StartService();
-			}
-				break;
-			case GetResult: {
-				// get word count
-				Utils.Log(TAG, "Request result");
-				this.RetrievingResult(requestArr[1]);
-			}
-				break;
-			case StopService: {
-				// stop service
-				Utils.Log(TAG, "Stop service");
-				this.StopService(requestArr[1]);
-			}
-				break;
-			default:
-				break;
+				switch (sType) {
+				case StartService: {
+					// Start service
+					Utils.Log(TAG, "Start service");
+					this.StartService();
+				}
+					break;
+				case GetResult: {
+					// get word count
+					Utils.Log(TAG, "Request result");
+					this.RetrievingResult(requestArr[1]);
+				}
+					break;
+				case StopService: {
+					// stop service
+					Utils.Log(TAG, "Stop service");
+					this.StopService(requestArr[1]);
+				}
+					break;
+				case Disconnect: {
+					Utils.Log(TAG, "Client disconnected");
+					return;
+					// Intentional fallthrough
+				}
+				}
+				//end while
 			}
 
-		} catch (IOException e) {
+		} catch (SocketException e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				if (_cDos != null) {
-					_cDos.close();
-				}
-				if (_cDis != null) {
-					_cDis.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
+		} catch (EOFException e) {
+			e.printStackTrace();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void StartService() throws UnknownHostException, IOException {
+		Socket wSk = null;
+		DataInputStream wDis = null;
+		DataOutputStream wDos = null;
+		// decide worker
+		WorkerInfo pWorker = null;
+		boolean isFull = false;
+		for (WorkerInfo w : Master.listWorker) {
+			// ite through worker list to check which one has the least
+			// workload
+			wSk = new Socket(w.getAddress(), w.getPort());
+			wDis = new DataInputStream(wSk.getInputStream());
+			wDos = new DataOutputStream(wSk.getOutputStream());
+			wDos.writeUTF(ServiceEnum.CheckStatus.toString());
+			String[] statusArr = wDis.readUTF().split(",");
+			long tempMem = Long.parseLong(statusArr[0]);
+			int tempNoP = Integer.parseInt(statusArr[1]);
+			if (tempNoP >= Master.MAX_PROCESS) {
+				isFull = true;
+			} else {
+				isFull = false;
 			}
+			if (pWorker == null) {
+				pWorker = new WorkerInfo();
+				pWorker.setAddress(w.getAddress());
+				pWorker.setPort(w.getPort());
+				pWorker.setMemoryUsage(tempMem);
+				pWorker.setNumberOfProcess(tempNoP);
+				pWorker.setName(w.getName());
+			} else {
+				if (pWorker.getNumberOfProcess() > tempNoP) {
+					pWorker.setAddress(w.getAddress());
+					pWorker.setPort(w.getPort());
+					pWorker.setMemoryUsage(tempMem);
+					pWorker.setNumberOfProcess(tempNoP);
+					pWorker.setName(w.getName());
+				}
+			}
+			if (isFull) {
+				// start new worker and send info to client
+			}
+			wDos.close();
+			wDis.close();
+			wSk.close();
+		}
+
+		// send request to worker to start service
+		wSk = new Socket(pWorker.getAddress(), pWorker.getPort());
+		wDis = new DataInputStream(wSk.getInputStream());
+		wDos = new DataOutputStream(wSk.getOutputStream());
+		String passcode = generatePasscode();
+		wDos.writeUTF(String.format("%s,%s", ServiceEnum.StartService.toString(), passcode));
+
+		// get wordcount instance from worker.
+		String portNo = wDis.readUTF();
+
+		// add new wordcount instance
+		WordCountInstance wc = new WordCountInstance(passcode);
+		wc.setAddress(pWorker.getAddress());
+		wc.setWorkerName(pWorker.getName());
+		wc.setPort(Integer.parseInt(portNo));
+		wc.StartService();
+		Master.listWCInstance.add(wc);
+
+		// send passcode back to client
+		_cDos.writeUTF(String.format("%s,%s", ServiceEnum.OK, passcode));
+		Utils.Log(TAG, String.format("Start wordcount instance at: %s:%d", wSk.getInetAddress(), wc.getPort()));
+		wDis.close();
+		wDos.close();
+		wSk.close();
+	}
+
+	public String generatePasscode() {
+		return new BigInteger(130, random).toString(32);
+	}
+
+	public void RetrievingResult(String passcode) throws IOException, ClassNotFoundException {
+		WordCountInstance target = null;
+		for (WordCountInstance w : Master.listWCInstance) {
+			if (passcode.equals(w.getPasscode())) {
+				target = w;
+				break;
+			}
+		}
+		if (target == null) {
+			_cDos.writeUTF(String.format("%s,%s", ServiceEnum.Error.toString(), "Invalid passcode."));
+		} else {
+			_cDos.writeUTF(ServiceEnum.OK.toString());
+			Utils.Log(TAG, target.getAddress() + " : " + target.getPort());
+			Socket sk = new Socket(target.getAddress(), target.getPort());
+			ObjectInputStream in = new ObjectInputStream(sk.getInputStream());
+			ObjectOutputStream out = new ObjectOutputStream(_cSocket.getOutputStream());
+			HashMap<String, Integer> data = (HashMap<String, Integer>) in.readObject();
+			out.writeObject(data);
+
 		}
 	}
 
@@ -113,7 +206,7 @@ public class RequestHandler extends Thread {
 			_cDos.writeUTF(ServiceEnum.OK.toString());
 			WorkerInfo wi = null;
 			for (WorkerInfo w : Master.listWorker) {
-				if (w.getAddress().equals(target.getAddress())) {
+				if (w.getName().equals(target.getWorkerName())) {
 					wi = w;
 				}
 			}
@@ -122,7 +215,8 @@ public class RequestHandler extends Thread {
 			DataOutputStream dos = new DataOutputStream(sk.getOutputStream());
 
 			dos.writeUTF(String.format("%s,%s", ServiceEnum.StopService, passcode));
-			if (ServiceEnum.valueOf(dis.readUTF()) == ServiceEnum.OK) {
+			String[] responseArr = dis.readUTF().split(",");
+			if (ServiceEnum.valueOf(responseArr[0]) == ServiceEnum.OK) {
 				WordCountInstance wc = null;
 				for (WordCountInstance wci : Master.listWCInstance) {
 					if (wci.getPasscode().equals(passcode)) {
@@ -148,135 +242,11 @@ public class RequestHandler extends Thread {
 
 				double totalPrice = d.getSeconds() * PRICE_PER_SECOND;
 				_cDos.writeUTF(
-						String.format("Total time: %d:%d:%d. Cost: %s", hours, mins, secs, String.valueOf(totalPrice)));
-
-			}
-
-		}
-	}
-
-	public void StartService() throws UnknownHostException, IOException {
-		Socket wSk = null;
-		DataInputStream wDis = null;
-		DataOutputStream wDos = null;
-		// decide worker
-		WorkerInfo preferedWorker = null;
-		boolean isFull = false;
-		for (WorkerInfo w : Master.listWorker) {
-			// ite through worker list to check which one has the least
-			// workload
-			wSk = new Socket(w.getAddress(), w.getPort());
-			wDis = new DataInputStream(wSk.getInputStream());
-			wDos = new DataOutputStream(wSk.getOutputStream());
-			wDos.writeUTF(ServiceEnum.CheckStatus.toString());
-			String[] statusArr = wDis.readUTF().split(",");
-			long tempMem = Long.parseLong(statusArr[0]);
-			int tempNoP = Integer.parseInt(statusArr[1]);
-			if (tempNoP >= Master.MAX_PROCESS) {
-				isFull = true;
-			} else {
-				isFull = false;
-			}
-			if (preferedWorker == null) {
-				preferedWorker = new WorkerInfo();
-				preferedWorker.setAddress(w.getAddress());
-				preferedWorker.setPort(w.getPort());
-				preferedWorker.setMemoryUsage(tempMem);
-				preferedWorker.setNumberOfProcess(tempNoP);
-			} else {
-				// if (preferedWorker.getMemoryUsage() > tempMem) {
-				// preferedWorker.setAddress(w.getAddress());
-				// preferedWorker.setPort(w.getPort());
-				// preferedWorker.setMemoryUsage(tempMem);
-				// preferedWorker.setNumberOfProcess(tempNoP);
-				// }
-				if (preferedWorker.getNumberOfProcess() > tempNoP) {
-					preferedWorker.setAddress(w.getAddress());
-					preferedWorker.setPort(w.getPort());
-					preferedWorker.setMemoryUsage(tempMem);
-					preferedWorker.setNumberOfProcess(tempNoP);
-				}
-			}
-			if (isFull) {
-				// start new worker and send info to client
-			}
-			wDos.close();
-			wDis.close();
-			wSk.close();
-		}
-
-		// send request to worker to start service
-		WORKER_IP = preferedWorker.getAddress();
-		WORKER_PORT = preferedWorker.getPort();
-		wSk = new Socket(WORKER_IP, WORKER_PORT);
-		wDis = new DataInputStream(wSk.getInputStream());
-		wDos = new DataOutputStream(wSk.getOutputStream());
-		String passcode = PasscodeGenerator(PASSCODE_LENGTH);
-		wDos.writeUTF(String.format("%s,%s", ServiceEnum.StartService.toString(), passcode));
-
-		String portNo = wDis.readUTF();
-
-		WordCountInstance wc = new WordCountInstance(passcode);
-		wc.setAddress(WORKER_IP);
-		wc.setPort(Integer.parseInt(portNo));
-		wc.StartService();
-
-		// send passcode to client
-		// _cDos = new DataOutputStream(_cSocket.getOutputStream());
-		_cDos.writeUTF(String.format("%s,%s", ServiceEnum.OK, passcode));
-		Utils.Log(TAG, "Start new word count service.");
-
-	}
-
-	public String PasscodeGenerator(int len) {
-		StringBuilder sb = new StringBuilder(len);
-		boolean isDone = false;
-		while (!isDone) {
-			for (int i = 0; i < len; i++)
-				sb.append(AB.charAt(rnd.nextInt(AB.length())));
-			for (int i = 0; i < Master.listWCInstance.size(); i++) {
-				WordCountInstance w = Master.listWCInstance.get(i);
-				if (w.getPasscode().equals(sb.toString())) {
-					isDone = false;
-					break;
-				}
-				isDone = true;
-			}
-		}
-		return sb.toString();
-	}
-
-	public void RetrievingResult(String passcode) throws IOException {
-		WordCountInstance target = null;
-		for (WordCountInstance w : Master.listWCInstance) {
-			if (passcode.equals(w.getPasscode())) {
-				target = w;
-				break;
-			}
-		}
-		if (target == null) {
-			_cDos.writeUTF(String.format("%s,%s", ServiceEnum.Error, "Invalid passcode."));
-		} else {
-			_cDos.writeUTF(ServiceEnum.OK.toString());
-			Socket sk = new Socket(target.getAddress(), target.getPort());
-			ObjectInputStream in = new ObjectInputStream(sk.getInputStream());
-			ObjectOutputStream out = new ObjectOutputStream(sk.getOutputStream());
-			out.writeObject(new String(passcode));
-			out.close();
-
-			try {
-				// receive data and forward to user without deserialise
-				// HashMap<String, Integer> data = (HashMap<String, Integer>)
-				// in.readObject();
-				out = new ObjectOutputStream(_cSocket.getOutputStream());
-				out.writeObject(in.readObject());
-
-				out.close();
-				in.close();
+						String.format("Total time: %2d:%2d:%2d Hour. Cost: $%.2f", hours, mins, secs, totalPrice));
+				Master.listWCInstance.remove(wc);
+				dis.close();
+				dos.close();
 				sk.close();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 
 		}

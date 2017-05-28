@@ -3,6 +3,7 @@ package SharedObject;
 public class WorkerInfo {
 
 	private String Address;
+	private String Name;
 	private int Port;
 	private long CPUUsage;
 	private long MemoryUsage;
@@ -11,7 +12,13 @@ public class WorkerInfo {
 	public WorkerInfo() {
 		// TODO Auto-generated constructor stub
 	}
+	public String getName() {
+		return this.Name;
+	}
 
+	public void setName(String value) {
+		this.Name = value;
+	}
 	public String getAddress() {
 		return this.Address;
 	}

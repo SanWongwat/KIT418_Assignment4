@@ -13,21 +13,23 @@ import SharedObject.ServiceEnum;
 
 public class Client {
 
-	private static String SERVER_IP = "localhost";
-	private static int SERVER_PORT = 1255;
-	private static Socket sk;
+	private static String MASTER_IP= "localhost";
+	private static int MASTER_PORT= 1255;
+	private static Socket _sk;
 	private static DataInputStream _dis;
 	private static DataOutputStream _dos;
 	private static String selectedOption;
-	private static int PASSCODE_LENGTH = 12;
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		if (args.length == 2) {
+			MASTER_IP = args[0];
+			MASTER_PORT = Integer.parseInt(args[1]);
+		}
 		try {
 			// connect to master;
-			sk = new Socket(SERVER_IP, SERVER_PORT);
-			_dis = new DataInputStream(sk.getInputStream());
-			_dos = new DataOutputStream(sk.getOutputStream());
+			_sk = new Socket(MASTER_IP, MASTER_PORT);
+			_dis = new DataInputStream(_sk.getInputStream());
+			_dos = new DataOutputStream(_sk.getOutputStream());
 
 			String options = _dis.readUTF();
 			System.out.println(options);
@@ -43,8 +45,11 @@ public class Client {
 					StopService();
 				} else if (selectedOption.equals("4")) {
 					System.out.println("Bye Bye.");
+					_dos.writeUTF(ServiceEnum.Disconnect.toString());
 					in.close();
-					sk.close();
+					_dos.close();
+					_dis.close();
+					_sk.close();
 					break;
 				} else {
 					System.out.println("Invalid options.");
@@ -58,8 +63,8 @@ public class Client {
 	}
 
 	private static void StopService() throws IOException, ClassNotFoundException {
-		GetResult();
-		if(validatePasscode(ServiceEnum.StopService)){
+//		GetResult();
+		if (validatePasscode(ServiceEnum.StopService)) {
 			String summary = _dis.readUTF();
 			System.out.println(summary);
 		}
@@ -70,12 +75,12 @@ public class Client {
 		if (validatePasscode(ServiceEnum.GetResult)) {
 
 			// send passcode and get result back
-			ObjectInputStream oin = new ObjectInputStream(sk.getInputStream());
+			// _dis.close();
+			ObjectInputStream oin = new ObjectInputStream(_sk.getInputStream());
 			HashMap<String, Integer> data = (HashMap<String, Integer>) oin.readObject();
 			for (String k : data.keySet()) {
 				System.out.println(String.format("%s: %d word", k, data.get(k)));
 			}
-			oin.close();
 		}
 	}
 
@@ -87,16 +92,16 @@ public class Client {
 		while (count < 3) {
 			passcode = in.readLine();
 			_dos.writeUTF(String.format("%s,%s", s.toString(), passcode));
-			String status = _dis.readUTF();
-			ServiceEnum check = ServiceEnum.valueOf(status);
+			String[] status = _dis.readUTF().split(",");
+			ServiceEnum check = ServiceEnum.valueOf(status[0]);
 			if (check == ServiceEnum.Error) {
-				System.out.println("Invalid passcode");
+				System.out.println(status[1]);
 			} else {
 				break;
 			}
 			count++;
 		}
-		if (count == 2) {
+		if (count == 3) {
 			System.out.println("Too many attempt. Please specify service again.");
 			return false;
 		}
@@ -117,10 +122,10 @@ public class Client {
 			System.out.println("Your passcode is " + passcode);
 
 			// connect to Worker and send start service request
-			String startServiceStr = String.format("1,%s", passcode);
-			sk = new Socket(SERVER_IP, SERVER_PORT);
-			_dos = new DataOutputStream(sk.getOutputStream());
-			_dos.writeUTF(startServiceStr);
+			// String startServiceStr = String.format("1,%s", passcode);
+			// sk = new Socket(SERVER_IP, SERVER_PORT);
+			// _dos = new DataOutputStream(sk.getOutputStream());
+			// _dos.writeUTF(startServiceStr);
 		}
 	}
 

@@ -6,5 +6,7 @@ public enum ServiceEnum {
 	GetResult,
 	CheckStatus,
 	Error,
-	OK
+	OK,
+	Disconnect,
+	Sync
 }

@@ -1,13 +1,11 @@
 package SharedObject;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Comparator;
 import java.util.Date;
 
 public class WordCountInstance {
 	private String Address;
 	private int Port;
+	private String WorkerName;
 	private String Passcode;
 	private Date StartTime;
 	private Date StopTime;
@@ -17,7 +15,13 @@ public class WordCountInstance {
 		// TODO Auto-generated constructor stub
 		Passcode = pPasscode;
 	}
+	public String getWorkerName() {
+		return this.WorkerName;
+	}
 
+	public void setWorkerName(String value) {
+		this.WorkerName = value;
+	}
 	public String getAddress() {
 		return this.Address;
 	}

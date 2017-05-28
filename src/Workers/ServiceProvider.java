@@ -2,8 +2,10 @@ package Workers;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +19,6 @@ public class ServiceProvider extends Thread {
 	private Socket _mSocket;
 	private DataInputStream _dis;
 	private DataOutputStream _dos;
-	private String[] _requestArr;
 	private String TAG = "ServiceProvider";
 
 	public ServiceProvider(Socket sk) {
@@ -27,20 +28,24 @@ public class ServiceProvider extends Thread {
 
 	public void run() {
 		try {
+			Utils.Log(TAG, "New Request");
 			_dis = new DataInputStream(_mSocket.getInputStream());
 			_dos = new DataOutputStream(_mSocket.getOutputStream());
-			_requestArr = _dis.readUTF().split(",");
-			ServiceEnum sType = ServiceEnum.valueOf(_requestArr[0]);
+			String[] requestArr = _dis.readUTF().split(",");
+			ServiceEnum sType = ServiceEnum.valueOf(requestArr[0]);
 			switch (sType) {
 			case StartService:
-				StartService();
+				StartService(requestArr[1]);
 				break;
 			case StopService:
-				// Stop service
-				StopService(_requestArr[1]);
+				StopService(requestArr[1]);
 				break;
 			case CheckStatus:
 				GetStatus();
+				break;
+			case Sync:
+				UpdateMaster();
+				break;
 			default:
 				break;
 			}
@@ -50,37 +55,42 @@ public class ServiceProvider extends Thread {
 			if (_dis != null) {
 				_dis.close();
 			}
+			if (_mSocket != null) {
+				_mSocket.close();
+			}
 
+		} catch (EOFException e) {
+			Utils.Log(TAG, "Communication has ended.");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public void StartService() throws IOException {
+	private void UpdateMaster() {
+		
+	}
+
+	public void StartService(String passcode) throws IOException {
 		// Start service
-		String passcode = _requestArr[1];
+		Utils.Log(TAG, "Starting instance...");
 
 		List<String> command = new ArrayList<String>();
 		command.add("java");
 		command.add("-jar");
 		// path of jar file
-		command.add("\\");
-		// args
-		command.add(passcode);
-
-		int portNo = 0;
-		for (int i = 0; i < Worker.processes.size(); i++) {
-			if (Worker.processes.get(i).getPort() > portNo) {
-				portNo = Worker.processes.get(i).getPort();
+		command.add(Worker.WORDCOUNTPATH);
+		int portNo = Worker.INIT_PORT;
+		while (true) {
+			if (isPortAvialble(portNo)) {
+				break;
+			} else {
+				portNo++;
 			}
 		}
-		portNo++;
-
 		command.add(String.valueOf(portNo));
 		// create new word count instance
 		WordCountInstance wc = new WordCountInstance(passcode);
-		wc.setAddress(Worker.SERVER_IP);
+		wc.setAddress(Worker.WORKER_IP);
 		wc.setPort(portNo);
 		wc.StartService();
 		ProcessBuilder pb = new ProcessBuilder(command);
@@ -88,20 +98,25 @@ public class ServiceProvider extends Thread {
 		wc.setProcess(p);
 		Worker.processes.add(wc);
 		_dos.writeUTF(String.valueOf(portNo));
-		Utils.Log(TAG, "Start new word count instance");
+		Utils.Log(TAG, "New wordcount instance started at port :" + portNo);
+		Utils.Log(TAG, ""+Worker.processes.size());
 	}
 
 	public void StopService(String passcode) throws IOException {
 		Utils.Log(TAG, "Stopping service: " + passcode);
+		boolean isOk = false;
 		WordCountInstance wc = null;
+		Utils.Log(TAG, "" + Worker.processes.size());
 		for (WordCountInstance w : Worker.processes) {
+			Utils.Log(TAG, "finding process");
 			if (w.getPasscode().equals(passcode)) {
+				Utils.Log(TAG, "found process");
 				Process p = w.getProcess();
 				if (p.isAlive()) {
-					// nicely terminate process
+					Utils.Log(TAG, "destroy process");
 					p.destroy();
 					if (p.isAlive()) {
-						// still alive? kill it
+						Utils.Log(TAG, "kill process");
 						p.destroyForcibly();
 					}
 				}
@@ -116,44 +131,28 @@ public class ServiceProvider extends Thread {
 				}
 			}
 		}
-		Worker.processes.remove(wc);
+		if (isOk) {
+			Worker.processes.remove(wc);
+		}
 	}
 
 	public void GetStatus() throws IOException {
-		Utils.Log(TAG, "Master check mem status and number of process");
-		Utils.Log(TAG, Runtime.getRuntime().freeMemory() + "," + Worker.processes.size());
+		Utils.Log(TAG, "Master check number of processes.");
+		// Utils.Log(TAG, Runtime.getRuntime().freeMemory() + "," +
+		// Worker.processes.size());
 
 		String response = Runtime.getRuntime().freeMemory() + "," + Worker.processes.size();
 		_dos.writeUTF(response);
-		// // check workload (for master to use)
-		// /* Total number of processors or cores available to the JVM */
-		// System.out.println("Available processors (cores): " +
-		// Runtime.getRuntime().availableProcessors());
-		//
-		// /* Total amount of free memory available to the JVM */
-		// System.out.println("Free memory (bytes): " +
-		// Runtime.getRuntime().freeMemory());
-		//
-		// /* This will return Long.MAX_VALUE if there is no preset limit */
-		// long maxMemory = Runtime.getRuntime().maxMemory();
-		// /* Maximum amount of memory the JVM will attempt to use */
-		// System.out.println("Maximum memory (bytes): " + (maxMemory ==
-		// Long.MAX_VALUE ? "no limit" : maxMemory));
-		//
-		// /* Total memory currently available to the JVM */
-		// System.out.println("Total memory available to JVM (bytes): " +
-		// Runtime.getRuntime().totalMemory());
-		//
-		// /* Get a list of all filesystem roots on this system */
-		// File[] roots = File.listRoots();
-		//
-		// /* For each filesystem root, print some info */
-		// for (File root : roots) {
-		// System.out.println("File system root: " + root.getAbsolutePath());
-		// System.out.println("Total space (bytes): " + root.getTotalSpace());
-		// System.out.println("Free space (bytes): " + root.getFreeSpace());
-		// System.out.println("Usable space (bytes): " + root.getUsableSpace());
-		// }
 	}
 
+	public boolean isPortAvialble(int port) {
+		ServerSocket s = null;
+		try {
+			s = new ServerSocket(port);
+			s.close();
+			return true;
+		} catch (IOException ex) {
+			return false;
+		}
+	}
 }
