@@ -19,6 +19,7 @@ public class WordCountEngine {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		//ServerSocket ss;
+		int k=Integer.parseInt(args[1]);
 		try{
 			//ss = new ServerSocket(PORT_NUMBER);
 			//System.out.println("WordCountEngine start at port 1254");
@@ -26,10 +27,22 @@ public class WordCountEngine {
 			Socket socket=new Socket("localhost",PORT_NUMBER);
 			br=new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			while(br.readLine()!=null){
-				String conent=br.readLine();
-				System.out.println(conent);
+				String content=br.readLine();
+				System.out.println(content);
 				// for each content , done the calculation.
+				//if the string already exists, done the following
+				if(resultSet.keySet().contains(content))
+			     {
+			          Integer count = resultSet.get(content) + 1;
+			          resultSet.put(content, count);
+			     }
+				//if the string does not exist in the current set, 
+			     else{
+			          resultSet.put(content, 1);
+
+			      }
 			}
+			resultSet=MapUtil.sortByValue(resultSet);
 			
 			
 			
