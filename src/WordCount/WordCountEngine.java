@@ -53,6 +53,7 @@ public class WordCountEngine {
 			    		  resultSet.put(it.next(), count);
 			    		  }else{
 			    			  resultSet.remove(it.next());
+			    			  number=number-1;
 			    		  }
 			    	  }
 			      }
