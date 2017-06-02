@@ -2,15 +2,36 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+
+
 public class StringGen {
 	public static void main(String[] args) throws IOException {
-		ServerSocket s = new ServerSocket(1254);
+		ServerSocket serversocket=null;
+		try {
+			
+			serversocket=new ServerSocket(1280);
+			while(true){
+				Socket ss=serversocket.accept();
+				//socketList.add(ss);
+				new Thread(new ClientInfoThread(ss)).start();
+			}
+			
+			
+			
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+		/*ServerSocket s = new ServerSocket(1254);
 	    System.out.println("Server started");
 	    Socket s1 =s.accept();
 	    OutputStream s1out = s1.getOutputStream();
@@ -19,10 +40,11 @@ public class StringGen {
 	    FileInputStream fstream = new FileInputStream("c:/Textfile1.txt");
 	    DataInputStream in = new DataInputStream(fstream);
 	    BufferedReader br = new BufferedReader(new InputStreamReader(in));
-	    String strLine;
+	    String strLine;*/
 	    
 	    //StringBuilder sb =  new StringBuilder();
 	    //String lineBreak = System.getProperty("line.separator");
+	  /*  
 	    while((strLine =br.readLine()) != null) 
 	    { 
 	    	//System.out.print(strLine);
@@ -30,7 +52,7 @@ public class StringGen {
 	    	
 	    }
 	    fstream.close();
-	    
+	    */
 	    
 	    
 	    

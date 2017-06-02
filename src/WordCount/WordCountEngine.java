@@ -20,8 +20,8 @@ public class WordCountEngine {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		//ServerSocket ss;
-		int k=Integer.parseInt(args[1]);
-		k=3;
+		//int k=Integer.parseInt(args[1]);
+	int	k=3;
 		try{
 			//ss = new ServerSocket(PORT_NUMBER);
 			//System.out.println("WordCountEngine start at port 1254");
@@ -31,7 +31,7 @@ public class WordCountEngine {
 			int number=0;
 			while(br.readLine()!=null){
 				String content=br.readLine();
-				System.out.println(content);
+				//System.out.println(content);
 				// for each content , done the calculation.
 				//if the string already exists, done the following
 				
@@ -45,7 +45,9 @@ public class WordCountEngine {
 			          resultSet.put(content, 1);
 			          number=number+1;
 
-			      }else{
+			      }
+			     
+			     else{
 			    	  Iterator<String> it=resultSet.keySet().iterator();
 			    	  while(it.hasNext()){
 			    		  Integer count=resultSet.get(it.next())-1;
@@ -57,9 +59,14 @@ public class WordCountEngine {
 			    		  }
 			    	  }
 			      }
+				
+			
 			}
 			
-			
+			for (HashMap.Entry<String, Integer> entry : resultSet.entrySet()) {
+				 
+				 System.out.println(entry);
+			 }
 			
 			
 			

@@ -1,4 +1,4 @@
-package StreamGenerator;
+
 
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
