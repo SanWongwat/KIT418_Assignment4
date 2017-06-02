@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.net.Socket;
+import java.text.ParseException;
 import java.util.HashMap;
 
 import SharedObject.ServiceEnum;
@@ -21,6 +22,7 @@ public class Client {
 	private static DataInputStream _dis;
 	private static DataOutputStream _dos;
 	private static String selectedOption;
+	private static BufferedReader in;
 
 	public static void main(String[] args) {
 		if (args.length == 2) {
@@ -38,7 +40,7 @@ public class Client {
 
 			String options = _dis.readUTF();
 			System.out.println(options);
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			in = new BufferedReader(new InputStreamReader(System.in));
 
 			while (true) {
 				String selectedOption = in.readLine();
@@ -91,7 +93,7 @@ public class Client {
 
 	private static boolean validatePasscode(ServiceEnum s) throws IOException {
 		System.out.println("Please specify your passcode.");
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		in = new BufferedReader(new InputStreamReader(System.in));
 		String passcode = null;
 		int count = 0;
 		while (count < 3) {
@@ -116,6 +118,20 @@ public class Client {
 	private static void StartService() throws IOException {
 		selectedOption = ServiceEnum.StartService.toString();
 		_dos.writeUTF(selectedOption);
+
+		System.out.println(_dis.readUTF());
+		String kvalue;
+		while (true) {
+			try {
+				kvalue = in.readLine();
+				Integer.parseInt(kvalue);
+				break;
+			} catch (Exception e) {
+				System.out.print("Please input a number.");
+			}
+		}
+		_dos.writeUTF(kvalue);
+
 		String response = _dis.readUTF();
 
 		String[] responseArr = response.split(",");

@@ -26,8 +26,8 @@ public class ClientInfoThread implements Runnable{
 			DataOutputStream _dos = new DataOutputStream(s.getOutputStream());
 			System.out.println("Streaming content...");
 			while ((hasRead = fr.read(cbuf)) > 0) {
-				_dos.writeUTF(new String(cbuf, 0, hasRead));
-				//System.out.println(new String(cbuf, 0, hasRead));
+				//_dos.writeUTF(new String(cbuf, 0, hasRead));
+				System.out.println(new String(cbuf, 0, hasRead));
 				Thread.sleep(2000);
 			}
 		}catch(IOException | InterruptedException e){

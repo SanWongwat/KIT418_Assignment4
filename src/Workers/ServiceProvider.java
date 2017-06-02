@@ -36,7 +36,7 @@ public class ServiceProvider extends Thread {
 			ServiceEnum sType = ServiceEnum.valueOf(requestArr[0]);
 			switch (sType) {
 			case StartService:
-				StartService(requestArr[1]);
+				StartService(requestArr[1], requestArr[2]);
 				break;
 			case StopService:
 				StopService(requestArr[1]);
@@ -64,7 +64,7 @@ public class ServiceProvider extends Thread {
 		}
 	}
 
-	public void StartService(String passcode) throws IOException {
+	public void StartService(String passcode, String kvalue) throws IOException {
 		// Start service
 		Utils.Log(TAG, "Starting instance...");
 
@@ -82,6 +82,7 @@ public class ServiceProvider extends Thread {
 			}
 		}
 		command.add(String.valueOf(portNo));
+		command.add(kvalue);
 		// create new word count instance
 		WordCountInstance wc = new WordCountInstance(passcode);
 		wc.setAddress(Worker.WORKER_IP);
@@ -94,7 +95,6 @@ public class ServiceProvider extends Thread {
 		Worker.processes.add(wc);
 		_dos.writeUTF(String.valueOf(portNo));
 		Utils.Log(TAG, "New wordcount instance started at port :" + portNo);
-		Utils.Log(TAG, "" + Worker.processes.size());
 	}
 
 	public void StopService(String passcode) throws IOException {

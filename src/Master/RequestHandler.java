@@ -112,12 +112,15 @@ public class RequestHandler extends Thread {
 	}
 
 	public void StartService() throws UnknownHostException, IOException {
+		_cDos.writeUTF("Please specify how many frequent words you need to know (e.g. 4, 5, 10).");
+		String kvalue = _cDis.readUTF();
 		Socket wSk = null;
 		DataInputStream wDis = null;
 		DataOutputStream wDos = null;
 		// decide worker
 		WorkerInfo pWorker = null;
 		boolean isFull = false;
+
 		for (WorkerInfo w : Master.listWorker) {
 			// ite through worker list to check which one has the least
 			// workload
@@ -150,19 +153,23 @@ public class RequestHandler extends Thread {
 				}
 			}
 			if (isFull) {
-				// start new worker and send info to client
+				// Start new worker instance
+
+				// Update worker list in master
+
+				// Select the new instance to submit request
 			}
 			wDos.close();
 			wDis.close();
 			wSk.close();
 		}
 
-		// send request to worker to start service
+		// submit request to selected worker to start service
 		wSk = new Socket(pWorker.getAddress(), pWorker.getPort());
 		wDis = new DataInputStream(wSk.getInputStream());
 		wDos = new DataOutputStream(wSk.getOutputStream());
 		String passcode = generatePasscode();
-		wDos.writeUTF(String.format("%s,%s", ServiceEnum.StartService.toString(), passcode));
+		wDos.writeUTF(String.format("%s,%s,%s", ServiceEnum.StartService.toString(), passcode, kvalue));
 
 		// get wordcount instance from worker.
 		String portNo = wDis.readUTF();
@@ -177,7 +184,8 @@ public class RequestHandler extends Thread {
 
 		// send passcode back to client
 		_cDos.writeUTF(String.format("%s,%s", ServiceEnum.OK, passcode));
-		Utils.Log(TAG, String.format("Start wordcount instance at: %s:%d", wSk.getInetAddress(), wc.getPort()));
+		Utils.Log(TAG, String.format("Start wordcount instance at: %s:%d with K value of", wSk.getInetAddress(),
+				wc.getPort(), kvalue));
 		wDis.close();
 		wDos.close();
 		wSk.close();

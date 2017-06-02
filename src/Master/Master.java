@@ -21,6 +21,14 @@ public class Master implements Runnable {
 	private static final String TAG = "Master";
 
 	public static void main(String[] args) {
+		if (args.length == 3) {
+			MASTER_PORT = Integer.parseInt(args[0]);
+			MAX_PROCESS = Integer.parseInt(args[1]);
+			INIT_WORKERFILE = args[2];
+		} else {
+			Utils.Log(TAG, "Invalid arguments");
+			return;
+		}
 		try (BufferedReader br = new BufferedReader(new FileReader(System.getProperty("user.dir") + INIT_WORKERFILE))) {
 
 			String sCurrentLine;
@@ -39,13 +47,7 @@ public class Master implements Runnable {
 			Utils.Log(TAG, "Exit.");
 			return;
 		}
-		if (args.length == 2) {
-			MASTER_PORT = Integer.parseInt(args[0]);
-			MAX_PROCESS = Integer.parseInt(args[1]);
-		} else {
-			Utils.Log(TAG, "Invalid arguments");
-			return;
-		}
+		
 		Master master = new Master();
 		Thread t = new Thread(master);
 		t.start();
