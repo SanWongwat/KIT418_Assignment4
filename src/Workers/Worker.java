@@ -49,7 +49,7 @@ public class Worker implements Runnable {
 					System.out.println("Running " + Worker.processes.size() + " of Word Count process(es).");
 					for (WordCountInstance w : processes) {
 						System.out.println(String.format("Address: %s:%d", w.getAddress(), w.getPort()));
-					}
+					} 
 				}
 				if (command[0].equals("c")) {
 					for (WordCountInstance w : processes) {

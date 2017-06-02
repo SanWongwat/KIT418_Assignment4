@@ -31,7 +31,7 @@ public class RequestHandler extends Thread {
 	private final String optionStr = "Please specify service.\r\n1. Start service\r\n" + "2. Get current word count\r\n"
 			+ "3. Stop service\r\n" + "4. Exit";
 	private double PRICE_PER_SECOND = 0.005;
-	private SecureRandom random = new SecureRandom();
+	private SecureRandom random = new SecureRandom(); 
 
 	public RequestHandler(Socket sk) {
 		super();

@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 
 import SharedObject.ServiceEnum;
@@ -33,12 +34,19 @@ public class Client {
 			return;
 		}
 		try {
+			//long startTime = 0;
+			//long endTime = 0;
+			//SimpleDateFormat sdf = new SimpleDateFormat("mm:ss.SSS");
+			//startTime = System.currentTimeMillis();
 			// connect to master;
 			_sk = new Socket(MASTER_IP, MASTER_PORT);
 			_dis = new DataInputStream(_sk.getInputStream());
 			_dos = new DataOutputStream(_sk.getOutputStream());
 
 			String options = _dis.readUTF();
+			//endTime = System.currentTimeMillis();
+			//long diff = endTime - startTime;
+			System.out.println();
 			System.out.println(options);
 			in = new BufferedReader(new InputStreamReader(System.in));
 

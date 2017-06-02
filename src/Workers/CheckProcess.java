@@ -20,7 +20,7 @@ public class CheckProcess extends Thread {
 	public CheckProcess(String pmasterIP, int pmasterPort) {
 		super();
 		masterIP = pmasterIP;
-		masterPort = pmasterPort;
+		masterPort = pmasterPort; 
 	}
 
 	public void run() {

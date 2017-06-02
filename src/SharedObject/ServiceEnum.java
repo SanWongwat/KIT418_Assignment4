@@ -7,6 +7,6 @@ public enum ServiceEnum {
 	CheckStatus,
 	Error,
 	OK,
-	Disconnect,
+	Disconnect, 
 	Sync
 }

@@ -15,7 +15,7 @@ public class WorkerInfo {
 	public String getName() {
 		return this.Name;
 	}
-
+ 
 	public void setName(String value) {
 		this.Name = value;
 	}

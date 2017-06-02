@@ -22,7 +22,7 @@ public class Master implements Runnable {
 
 	public static void main(String[] args) {
 		if (args.length == 3) {
-			MASTER_PORT = Integer.parseInt(args[0]);
+			MASTER_PORT = Integer.parseInt(args[0]); 
 			MAX_PROCESS = Integer.parseInt(args[1]);
 			INIT_WORKERFILE = args[2];
 		} else {

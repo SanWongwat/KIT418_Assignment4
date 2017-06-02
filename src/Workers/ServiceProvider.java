@@ -106,7 +106,7 @@ public class ServiceProvider extends Thread {
 				Process p = w.getProcess();
 				if (p.isAlive()) {
 					p.destroy();
-					if (p.isAlive()) {
+					if (p.isAlive()) { 
 						p.destroyForcibly();
 					}
 				}

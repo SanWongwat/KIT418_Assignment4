@@ -13,9 +13,9 @@ public class Utils {
 		try {
 			ServiceEnum.valueOf(value);
 			return true;
-		} catch (IllegalArgumentException ex) {
+		} catch (IllegalArgumentException ex) { 
 			return false;
-		}
+		} 
 	}
 
 	public static boolean isPortAvailble(int port) {

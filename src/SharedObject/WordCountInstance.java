@@ -15,7 +15,7 @@ public class WordCountInstance implements Serializable {
 	public WordCountInstance(String pPasscode) {
 		// TODO Auto-generated constructor stub
 		Passcode = pPasscode;
-	}
+	} 
 	public String getWorkerName() {
 		return this.WorkerName;
 	}
