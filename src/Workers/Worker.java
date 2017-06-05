@@ -62,7 +62,7 @@ public class Worker implements Runnable {
 						}
 					}
 				}
-				if (command[0].equals("k")) {
+				else if (command[0].equals("k")) {
 					for (WordCountInstance w : processes) {
 						if (w.getPasscode().equals(command[1]) ) {
 							w.getProcess().destroy();
@@ -72,6 +72,9 @@ public class Worker implements Runnable {
 							}
 						}
 					}
+				}
+				else if (command[0].equals("exit")) {
+					break;
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -1,6 +1,8 @@
-package WordCount;
+package SharedObject;
 
-public class Word {
+import java.io.Serializable;
+
+public class Word implements Serializable{
 
 	private String Word;
 	private int Count;

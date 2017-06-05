@@ -2,6 +2,7 @@ package SharedObject;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.lang.reflect.Field;
 
 public class WordCountInstance implements Serializable {
 	private String Address;
@@ -64,5 +65,18 @@ public class WordCountInstance implements Serializable {
 	public void setProcess(Process value){
 		this.Process = value;
 	}
+	public int getPid(){
+		   if(Process.getClass().getName().equals("java.lang.UNIXProcess")) {
+		   /* get the PID on unix/linux systems */
+		     try {
+		      Field f = Process.getClass().getDeclaredField("pid");
+		      f.setAccessible(true);
+		      int pid = f.getInt(Process);
+		      return pid;
+		      } catch (Throwable e) {
+		         }
 
+		   }
+		return 0;
+		}
 }

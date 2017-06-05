@@ -1,0 +1,1 @@
+java -jar worker.jar 144.6.228.139 1250 144.6.228.14 1260 /wordcount.jar 1270

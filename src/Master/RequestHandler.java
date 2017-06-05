@@ -19,6 +19,7 @@ import java.util.List;
 
 import SharedObject.ServiceEnum;
 import SharedObject.Utils;
+import SharedObject.Word;
 import SharedObject.WordCountInstance;
 import SharedObject.WorkerInfo;
 
@@ -62,7 +63,7 @@ public class RequestHandler extends Thread {
 				case StartService: {
 					// Start service
 					Utils.Log(TAG, "Start service");
-					this.StartService();
+					this.StartService(requestArr[1]);
 				}
 					break;
 				case GetResult: {
@@ -111,9 +112,11 @@ public class RequestHandler extends Thread {
 		}
 	}
 
-	public void StartService() throws UnknownHostException, IOException {
+	public void StartService(String StreamGenIP) throws UnknownHostException, IOException {
 		_cDos.writeUTF("Please specify how many frequent words you need to know (e.g. 4, 5, 10).");
+		Utils.Log(TAG,"Reading kvalue...");
 		String kvalue = _cDis.readUTF();
+		Utils.Log(TAG,"kvalue read.");
 		Socket wSk = null;
 		DataInputStream wDis = null;
 		DataOutputStream wDos = null;
@@ -121,14 +124,18 @@ public class RequestHandler extends Thread {
 		WorkerInfo pWorker = null;
 		boolean isFull = false;
 
+		Utils.Log(TAG,"Finding worker...");
 		for (WorkerInfo w : Master.listWorker) {
 			// ite through worker list to check which one has the least
 			// workload
+			Utils.Log(TAG,String.format("Checking %s:%d", w.getAddress(),w.getPort()));
 			wSk = new Socket(w.getAddress(), w.getPort());
 			wDis = new DataInputStream(wSk.getInputStream());
 			wDos = new DataOutputStream(wSk.getOutputStream());
 			wDos.writeUTF(ServiceEnum.CheckStatus.toString());
+			Utils.Log(TAG,"Wait for response...");
 			String[] statusArr = wDis.readUTF().split(",");
+			Utils.Log(TAG,"Get response...");
 			long tempMem = Long.parseLong(statusArr[0]);
 			int tempNoP = Integer.parseInt(statusArr[1]);
 			if (tempNoP >= Master.MAX_PROCESS) {
@@ -165,11 +172,12 @@ public class RequestHandler extends Thread {
 		}
 
 		// submit request to selected worker to start service
+		Utils.Log(TAG, String.format("Connecting to: %s:$d", pWorker.getAddress(), pWorker.getPort()));
 		wSk = new Socket(pWorker.getAddress(), pWorker.getPort());
 		wDis = new DataInputStream(wSk.getInputStream());
 		wDos = new DataOutputStream(wSk.getOutputStream());
 		String passcode = generatePasscode();
-		wDos.writeUTF(String.format("%s,%s,%s", ServiceEnum.StartService.toString(), passcode, kvalue));
+		wDos.writeUTF(String.format("%s,%s,%s,%s", ServiceEnum.StartService.toString(), passcode, kvalue, StreamGenIP));
 
 		// get wordcount instance from worker.
 		String portNo = wDis.readUTF();
@@ -207,13 +215,13 @@ public class RequestHandler extends Thread {
 			_cDos.writeUTF(String.format("%s,%s", ServiceEnum.Error.toString(), "Invalid passcode."));
 		} else {
 			_cDos.writeUTF(ServiceEnum.OK.toString());
-			Utils.Log(TAG, target.getAddress() + " : " + target.getPort());
+			// Utils.Log(TAG, target.getAddress() + " : " + target.getPort());
 			Socket sk = new Socket(target.getAddress(), target.getPort());
 			DataOutputStream dos = new DataOutputStream(sk.getOutputStream());
 			dos.writeUTF(ServiceEnum.GetResult.toString());
 			ObjectInputStream in = new ObjectInputStream(sk.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(_cSocket.getOutputStream());
-			HashMap<String, Integer> data = (HashMap<String, Integer>) in.readObject();
+			List<Word> data = (List<Word>) in.readObject();
 			out.writeObject(data);
 
 		}
@@ -237,6 +245,7 @@ public class RequestHandler extends Thread {
 					wi = w;
 				}
 			}
+			// Utils.Log(TAG, wi.getAddress()+":"+ wi.getPort());
 			Socket sk = new Socket(wi.getAddress(), wi.getPort());
 			DataInputStream dis = new DataInputStream(sk.getInputStream());
 			DataOutputStream dos = new DataOutputStream(sk.getOutputStream());

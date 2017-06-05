@@ -47,7 +47,7 @@ public class Master implements Runnable {
 			Utils.Log(TAG, "Exit.");
 			return;
 		}
-		
+
 		Master master = new Master();
 		Thread t = new Thread(master);
 		t.start();
@@ -59,15 +59,14 @@ public class Master implements Runnable {
 					for (WorkerInfo w : listWorker) {
 						System.out.println(String.format("Address: %s:%d", w.getAddress(), w.getPort()));
 					}
-				}
-				if (command.equals("i")) {
+				} else if (command.equals("i")) {
 					for (WordCountInstance w : listWCInstance) {
 						System.out.println(String.format("Address: %s:%d", w.getAddress(), w.getPort()));
 					}
+				} else if (command.equals("exit")) {
+					break;
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 	}
@@ -84,7 +83,7 @@ public class Master implements Runnable {
 
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			Utils.Log(TAG, "Client disconnected.");
 			try {
 				if (ss != null) {
 					ss.close();

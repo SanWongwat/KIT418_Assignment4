@@ -36,7 +36,7 @@ public class ServiceProvider extends Thread {
 			ServiceEnum sType = ServiceEnum.valueOf(requestArr[0]);
 			switch (sType) {
 			case StartService:
-				StartService(requestArr[1], requestArr[2]);
+				StartService(requestArr[1], requestArr[2], requestArr[3]);
 				break;
 			case StopService:
 				StopService(requestArr[1]);
@@ -61,13 +61,15 @@ public class ServiceProvider extends Thread {
 			Utils.Log(TAG, "Communication has ended.");
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
-	public void StartService(String passcode, String kvalue) throws IOException {
+	public void StartService(String passcode, String kvalue, String IP) throws IOException {
 		// Start service
 		Utils.Log(TAG, "Starting instance...");
-
+		Utils.Log(TAG, String.format("%s,%s,%s", passcode, kvalue, IP));
 		List<String> command = new ArrayList<String>();
 		command.add("java");
 		command.add("-jar");
@@ -81,15 +83,16 @@ public class ServiceProvider extends Thread {
 				portNo++;
 			}
 		}
-		command.add(String.valueOf(portNo));
 		command.add(kvalue);
+		command.add(IP);
+		command.add(String.valueOf(portNo));
 		// create new word count instance
 		WordCountInstance wc = new WordCountInstance(passcode);
 		wc.setAddress(Worker.WORKER_IP);
 		wc.setPort(portNo);
 		wc.StartService();
+		Utils.Log(TAG, command.toString());
 		ProcessBuilder pb = new ProcessBuilder(command);
-		pb.redirectOutput(new File("D:\\output.txt"));
 		Process p = pb.start();
 		wc.setProcess(p);
 		Worker.processes.add(wc);
@@ -103,22 +106,16 @@ public class ServiceProvider extends Thread {
 		WordCountInstance wc = null;
 		for (WordCountInstance w : Worker.processes) {
 			if (w.getPasscode().equals(passcode)) {
+				Utils.Log(TAG, "Get process");
 				Process p = w.getProcess();
-				if (p.isAlive()) {
-					p.destroy();
-					if (p.isAlive()) {
-						p.destroyForcibly();
-					}
-				}
-				if (!p.isAlive()) {
-					Utils.Log(TAG, "Stopping service: " + passcode + " successfully.");
-					wc = w;
-					_dos.writeUTF(ServiceEnum.OK.toString());
-					break;
-				} else {
-					_dos.writeUTF(String.format("%s,%s", ServiceEnum.Error.toString(), "Cannot stop process"));
+				Utils.Log(TAG, "Destroying process.");
+				p.destroy();
 
-				}
+				Utils.Log(TAG, "Stopping service: " + passcode + " successfully.");
+				wc = w;
+				_dos.writeUTF(ServiceEnum.OK.toString());
+				isOk = true;
+				break;
 			}
 		}
 		if (isOk) {

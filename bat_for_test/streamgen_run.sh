@@ -1,0 +1,1 @@
+java -jar streamgen.jar 2000 /appetiz.txt

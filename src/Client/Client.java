@@ -8,10 +8,13 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.List;
 
 import SharedObject.ServiceEnum;
 import SharedObject.Utils;
+import SharedObject.Word;
 
 public class Client {
 
@@ -23,6 +26,10 @@ public class Client {
 	private static DataOutputStream _dos;
 	private static String selectedOption;
 	private static BufferedReader in;
+
+	static long startTime = 0;
+	static long endTime = 0;
+	SimpleDateFormat sdf = new SimpleDateFormat("mm:ss.SSS");
 
 	public static void main(String[] args) {
 		if (args.length == 2) {
@@ -43,14 +50,14 @@ public class Client {
 			in = new BufferedReader(new InputStreamReader(System.in));
 
 			while (true) {
-				String selectedOption = in.readLine();
-				if (selectedOption.equals("1")) {
-					StartService();
-				} else if (selectedOption.equals("2")) {
+				String[] selectedOption = in.readLine().split(" ");
+				if (selectedOption[0].equals("1")) {
+					StartService(selectedOption[1]);
+				} else if (selectedOption[0].equals("2")) {
 					GetResult();
-				} else if (selectedOption.equals("3")) {
+				} else if (selectedOption[0].equals("3")) {
 					StopService();
-				} else if (selectedOption.equals("4")) {
+				} else if (selectedOption[0].equals("4")) {
 					System.out.println("Bye Bye.");
 					_dos.writeUTF(ServiceEnum.Disconnect.toString());
 					in.close();
@@ -79,15 +86,20 @@ public class Client {
 	}
 
 	private static void GetResult() throws IOException, ClassNotFoundException {
+
+		startTime = System.currentTimeMillis();
 		if (validatePasscode(ServiceEnum.GetResult)) {
 
 			// send passcode and get result back
 			// _dis.close();
 			ObjectInputStream oin = new ObjectInputStream(_sk.getInputStream());
-			HashMap<String, Integer> data = (HashMap<String, Integer>) oin.readObject();
-			for (String k : data.keySet()) {
-				System.out.println(String.format("%s: %d word", k, data.get(k)));
+			List<Word> data = (List<Word>) oin.readObject();
+			endTime = System.currentTimeMillis();
+			for (Word w : data) {
+				System.out.println(String.format("[%s]: %d word", w.getWord(), w.getCount()));
 			}
+			long diff = endTime - startTime;
+			System.out.println(String.format("Time takes: %d ms.", diff));
 		}
 	}
 
@@ -115,9 +127,9 @@ public class Client {
 		return true;
 	}
 
-	private static void StartService() throws IOException {
+	private static void StartService(String StreamGenIP) throws IOException {
 		selectedOption = ServiceEnum.StartService.toString();
-		_dos.writeUTF(selectedOption);
+		_dos.writeUTF(String.format("%s,%s", selectedOption, StreamGenIP));
 
 		System.out.println(_dis.readUTF());
 		String kvalue;
@@ -137,16 +149,9 @@ public class Client {
 		String[] responseArr = response.split(",");
 		if (ServiceEnum.valueOf(responseArr[0]) == ServiceEnum.OK) {
 
-			// receive passcode
 			String passcode = responseArr[1];
 			System.out.println("Starting service...");
 			System.out.println("Your passcode is " + passcode);
-
-			// connect to Worker and send start service request
-			// String startServiceStr = String.format("1,%s", passcode);
-			// sk = new Socket(SERVER_IP, SERVER_PORT);
-			// _dos = new DataOutputStream(sk.getOutputStream());
-			// _dos.writeUTF(startServiceStr);
 		}
 	}
 
